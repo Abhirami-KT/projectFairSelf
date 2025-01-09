@@ -1,0 +1,1116 @@
+//new folder -> backend
+
+//terminal -> npm init -y
+
+//npm install express dotenv cors mongoose
+
+//new file index.js, .env, .gitignore
+
+//inside .gitignore -> type node_modeles & .env
+
+
+//inside index.js -> 
+//1. load .env file
+require('dotenv').config()
+
+//2. import express
+const express = require("express")
+
+//3. import cors
+const cors = require("cors")
+
+//4. create appllication server
+const pfServer = express()
+
+//5. middleware configuration
+pfServer.use(cors())
+pfServer.use(express.json())
+
+//6. define port
+const PORT = 3000 || process.env.PORT
+
+//7. run server
+pfServer.listen(PORT,()=>{
+    console.log("pf server connected to port", PORT)
+})
+
+//8. display in http://localhost:3000/
+pfServer.get('/',(req,res)=>{
+    res.send("Welcome to PF Server")
+})
+
+//test in postman
+
+
+
+//atlas -> copy connection string
+
+
+
+//.env -> connectionString = paste connection string from atlas
+//mongodb+srv://Abhirami:<db_password>@cluster0.21kby.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0
+//replace <db_password> with password given in atlast cluster creation and between /and? all DB name
+
+
+
+//New folder DB -> new file connection.js
+//inside connection.js -> 
+//import mongoose
+const mongoose = require('mongoose')
+
+//get connection string
+const connectionString = process.env.connectionString
+
+//define connection
+mongoose.connect(connectionString)
+.then(res=>{
+    console.log("PF server connected to mongoDB")
+})
+.catch(err=>{
+    console.log(err)
+})
+
+
+
+//inside index.js import db
+//9. import db
+const db = require('./DB/connection') 
+//output terminal ==> "pf server connected to port 3000" & "PF server connected to mongoDB" displayed
+
+
+
+//create 3 folders 
+//Controller -> userController.js
+//Routers -> Router.js
+//Models -> userSchema.js
+
+
+
+//inside userSchema.js ->
+//import mongoose
+const mongoose = require('mongoose')
+
+//create userSchema
+const userSchema = {
+    username:{
+        type:String,
+        required:true
+    },
+    email:{
+        type:String,
+        required:true
+    },
+    password:{
+        type:String,
+        required:true
+    },
+    github:{
+        type:String
+    },
+    linkedin:{
+        type:String
+    },
+    profilePic:{
+        type:String
+    }
+}
+
+//model creation
+const users = mongoose.model('users',userSchema)
+
+module.exports = users
+
+
+
+
+//inside userController.js ->
+const mongoose = require('mongoose')
+
+const users = require('../Models/userSchema')
+
+//register logic
+exports.registerAPI = async (req,res) => {
+    console.log("Inside register API")
+
+    const {username,email,password} = req.body
+
+    const existingUser = await users.findOne({email})
+    if(existingUser){
+        res.status(401).json("User already exists")
+    }
+    else{
+        const newUser = new users({
+            username:username,
+            email:email,
+            password:password,
+            github:"",
+            linkedin:"",
+            profilePic:""
+        })
+        await newUser.save()
+        res.status(200).json("User registration success")
+    }
+
+}
+
+
+
+
+//inside router.js
+const express = require('express')
+const router = express.Router()
+const userController = require('../Controller/userController')
+
+router.post('/api/register',userController.registerAPI)
+module.exports = router;
+
+
+
+
+//inside index.js
+pfServer.use(router)
+const router = require('./Routes/router')
+
+
+
+//test by sending username, email and password ---> output --> User registration success
+
+
+
+//<--------------Integration with frondend------------------->
+//fronend -> new folder -> service
+//services -> new files serverUrl.js, allAPI.js, commonAPI.js
+
+//serverUrl.js ->
+const serverUrl = 'http://localhost:3000/'
+
+//commonAPI.js ->
+//import axios
+import axios from 'axios'
+
+//configure axios
+export const commonAPI = async(httpMethod,url,reqBody,reqHeader) => {
+
+    let reqConfig = {
+        method:httpMethod,
+        url,
+        data:reqBody,
+        headers:reqHeader?reqHeader:{
+            "content-type":"application/json"
+        }
+    }
+    return await axios(reqConfig)
+    .then(res=>{
+        return res
+    })
+    .catch(err=>{
+        return err
+    })
+}
+
+//allAPI.js ->
+import { commonAPI } from "./commonAPI";
+import { serverUrl } from "./serverUrl";
+
+export const registerAPI = async (reqBody) => {
+    return await commonAPI('post',`${serverUrl}/api/register`,reqBody,"")
+}
+
+//add API in auth component
+//give onclick functionality for signUp button ->
+onclick = {handleRegister}
+//function call ->
+const [userDetails,setUserDetails] = useState({
+    username:"",
+    email:"",
+    password:""
+})
+const handleRegister = async () => {
+    console.log(userDetails)
+    
+    const {username, email, password} = userDetails
+    if(!username || !password || !email){
+        alert("Please fill the form")
+    }
+    else{
+        try{
+            const response = await registerAPI(userDetails)
+            console.log(response)
+            if(response.status == 200){
+                alert(response.data)
+            }
+            else{
+                alert(response.response.data)
+            }
+        }
+        catch(err){
+        } 
+        
+    }}
+
+<MDBInput onChange={(e)=>setUserDetails({...userDetails,username:e.target.value})} className='my-3' style={{ backgroundColor: 'white' }} label="Username" id="username" type="text" />
+
+//backend 
+//-> userController (add API function)
+//-> router (add route/path)
+//-> postman (test)
+
+//similarly do for login also
+
+///middlewares
+
+//addProjectAPI
+//will start with frondend -> 
+//allAPI.js ->
+export const addProjectAPI = async (reqBody,reqHeader) => {
+    return await commonAPI('post',`${serverUrl}/api/addProject`,reqBody,reqHeader)
+}
+//addProject.jsx ->
+//in html
+<button onClick={handleAddProject} className='my-3 p-2'>Add</button>
+
+//in js
+const [projectDetails,setProjectDetails] = useState({
+    title:"",
+    language:"",
+    github:"",
+    website:"",
+    overview:"",
+    projectImg:""
+})
+
+const [preview,setPreview] = useState("")
+
+const handleAddProject = async() => {
+    const {title, language, github, website, overview, projectImg} = projectDetails
+    console.log(projectDetails)
+
+    if(!title || !language || !github || !website || !overview || !projectImg){
+        alert("Please fill the form")
+    }
+    else{
+        try{
+
+            const reqBody = new FormData()
+            reqBody.append("title",title)
+            reqBody.append("language",language)
+            reqBody.append("github",github)
+            reqBody.append("website",website)
+            reqBody.append("overview",overview)
+            reqBody.append("projectImg",projectImg)
+
+            const reqHeader = {
+                
+            }
+
+            const response = await addProjectAPI(reqBody, reqHeader)
+            console.log(response)
+        }
+        catch(err){
+            console.log(err)
+        }
+    }
+}
+
+useEffect(()=>{
+    if(projectDetails.projectImg){
+        setPreview(URL.createObjectURL(projectDetails.projectImg))
+    }
+},[projectDetails.projectImg])
+
+// //in html
+// <input onChange={(e)=>setProjectDetails({...projectDetails,projectImg:e.target.files[0]})} type="file"style={{display:'none'}}/>
+//                                     <img src={preview?preview:"https://gratisography.com/wp-content/uploads/2024/10/gratisography-cool-cat-800x525.jpg"} style={{ width: '100%'}} alt="" />
+//                                     </label>
+//                                     <p className="fs-6 text-center">image should be in .jpg, .png, .jpeg format</p>
+//                                 </div>
+//                                 <div className="col-6">
+//                                     <MDBInput onChange={(e)=>setProjectDetails({...projectDetails,title:e.target.value})} className='my-2' style={{ backgroundColor: 'white' }} label="Title" id="title" type="text" />
+//                                     <MDBInput onChange={(e)=>setProjectDetails({...projectDetails,language:e.target.value})} className='my-3' style={{ backgroundColor: 'white' }} label="Language" id="language" type="text" />
+//                                     <MDBInput onChange={(e)=>setProjectDetails({...projectDetails,github:e.target.value})} className='my-3' style={{ backgroundColor: 'white' }} label="GitHub" id="github" type="text" />
+//                                     <MDBInput onChange={(e)=>setProjectDetails({...projectDetails,website:e.target.value})} className='my-3' style={{ backgroundColor: 'white' }} label="Website" id="website" type="text" />
+//                                     <MDBInput onChange={(e)=>setProjectDetails({...projectDetails,overview:e.target.value})} className='my-3' style={{ backgroundColor: 'white' }} label="Overview" id="overview" type="textarea" />
+//                                 </div>
+
+
+
+//new file projectSchema.js and projectController.js in backend
+//copy content from userchema and make modification according to project requirement
+//inside projectSchema.js ->
+//import mongoose
+const mongoose = require('mongoose')
+
+//create projectSchema
+const projectSchema = {
+    title:{
+        type:String,
+        required:true
+    },
+    language:{
+        type:String,
+        required:true
+    },
+    github:{
+        type:String,
+        required:true
+    },
+    website:{
+        type:String,
+        required:true
+    },
+    overview:{
+        type:String,
+        required:true
+    },
+    projectImg:{
+        type:String,
+        required:true
+    },
+    userId:{
+        type:String
+        //userId comes from mongoDB
+    }
+}
+
+//model creation
+const projects = mongoose.model('projects',projectSchema)
+
+module.exports = projects
+
+
+
+//.env ->
+jwtKey = superKey2025
+
+
+
+//middlewares -> new file -> jwtMiddleware.js
+//in jwtMiddleware.js ->
+const jwt = require('jsonwebtoken')
+
+const jwtMiddleware = (req,res,next) => {
+    console.log("Inside JWT Middleware")
+    try{
+        const token = req.headers['authorization'].slice(7)
+        console.log(token)
+
+        if(token){
+            const jwtVerification = jwt.verify(token, process.env.jwtKey)
+            console.log(jwtVerification)
+
+            req.payload = jwtVerification.userId
+            next()
+        }
+        else{
+            res.status(400).json("Please provide the token")
+        }
+    }
+    catch(err){
+        res.status(400).json("Please login")
+    }
+}
+
+module.exports=jwtMiddleware
+
+//import in router.js
+const jwtMiddleware = require('../Middlewares/jwtMiddleware')
+router.post('/api/addProject',jwtMiddleware,projectController.addProjectAPI)
+
+
+//middlewares -> new file -> multerMiddleware.js
+//in jwtMiddleware.js ->
+const multer = require('multer')
+
+const storage = multer.diskStorage({
+    destination:(req,file,callback) => {
+        callback(null,'./Uploads')
+    },
+    filename:(req,file,callback) => {
+        callback(null,`projectImg-${file.originalname}`)
+    }
+
+})
+
+const multerMiddleware = multer({
+    storage
+})
+
+module.exports=multerMiddleware
+
+
+        //usercontroller.js -> once loggin successful --> token must be generated
+        const existingUser = await users.findOne({email, password})
+            if(existingUser){
+                const token = jwt.sign({userId:existingUser._id}, process.env.jwtKey)
+                console.log(token)
+                res.status(201).json({currentUser:existingUser,token})
+            }
+
+        //also import jwt in top
+        const jwt = require('jsonwebtoken')
+
+        //token will be generated in backend terminal
+        //check by logging in in browser -> in console -> data -> current user -> token will be available
+
+
+//in projectController.js ->
+const mongoose = require('mongoose')
+
+const projects = require('../Models/projectSchema')
+
+//addProject logic
+exports.addProjectAPI = async (req, res) => {
+    console.log("Inside Add Project API");
+
+    if (!req.file) {
+        return res.status(400).json({ message: "No file uploaded" });
+    }
+
+    const { title, language, github, website, overview } = req.body;
+    const projectImg = req.file.filename; //from multer middleware
+    const userId = req.payload //from jwt middleware
+    console.log("projectImg", projectImg)
+    console.log("FormData", title, language, github, website, overview, userId)
+
+    try {
+        console.log("Inside Try");
+
+        const project = await projects.findOne({ github })
+        console.log("existingProject", project)
+        if (project) {
+            return res.status(409).json({ message: "Project already exists.." });
+        }
+        else {
+            const newProject = new projects({ title, language, github, website, overview, projectImg, userId })
+            //to save these details in mongodba
+            await newProject.save()
+            res.status(200).json(newProject)
+        }
+    }
+    catch (err) {
+        res.status(409).json(err)
+    }
+}
+
+//import in router.js
+const projectController = require('../Controller/projectController')
+const jwtMiddleware = require('../Middlewares/jwtMiddleware')
+const multerMiddleware = require('../Middlewares/multerMiddleware')
+router.post('/api/addProject',jwtMiddleware,multerMiddleware.single('projectImg'),projectController.addProjectAPI)
+
+
+//new folder ==> uploads
+
+
+//inside index.js
+//export image to frondend
+pfServer.use('/data',express.static('./data'))
+
+
+//fronend -> get token
+//inside auth.jsx ->
+sessionStorage.setItem("token",response.data.token) 
+//inside addProject.jsx ->
+const handleAddProject = async() => {
+    const {title, language, github, website, overview, projectImg} = projectDetails
+    console.log(projectDetails)
+
+    if(!title || !language || !github || !website || !overview || !projectImg){
+        alert("Please fill the form")
+    }
+    else{
+        try{
+
+            const reqBody = new FormData()
+            reqBody.append("title",title)
+            reqBody.append("language",language)
+            reqBody.append("github",github)
+            reqBody.append("website",website)
+            reqBody.append("overview",overview)
+            reqBody.append("projectImg", projectImg); // Add the file
+
+            const token = sessionStorage.getItem("token")
+            console.log(token)
+
+            const reqHeader = {
+                "Content-Type":"multipart/form-data",
+                "Authorization":`Bearer ${token}`
+            }
+            console.log(reqHeader)
+
+            const response = await addProjectAPI(reqBody, reqHeader)
+            console.log(response)
+            if(response.status==200){
+                alert("Project added successfully")
+                setProjectDetails({title:"",
+                    language:"",
+                    github:"",
+                    website:"",
+                    overview:"",
+                    projectImg:""})
+                onClick={toggleOpen}
+            }
+            else{
+                alert(response.response.data)
+            }
+        }
+        catch(err){
+            console.log(err)
+        }
+    }
+}
+
+
+
+
+//1. projectController.js
+//get all user project logic
+exports.getAllUserProjectAPI = async (req, res) => {
+    console.log("Inside get home Project API");
+
+    try {
+        const response = await projects.find()
+        console.log(response)
+        res.status(200).json(response);
+    }
+    catch (err) {
+        res.status(409).json(err)
+    }
+}
+//2. router.js
+router.get('/api/getAllUserProject', jwtMiddleware, projectController.getAllUserProjectAPI);
+//3. test in postman
+
+
+
+//1. projectController.js
+//get a user project logic
+exports.getAUserProjectAPI = async (req, res) => {
+    console.log("Inside get A User Project API");
+
+    const userId = req.payload
+    try {
+        const response = await projects.find({userId})
+        console.log(response)
+        res.status(200).json(response);
+    }
+    catch (err) {
+        res.status(409).json(err)
+    }
+}
+//2. router.js
+router.get('/api/getAUserProject', jwtMiddleware, projectController.getAUserProjectAPI);
+//3. test in postman
+
+
+
+//1. projectController.js
+//get home project logic
+exports.getAllUserProjectAPI = async (req, res) => {
+    console.log("Inside get home Project API");
+
+    try {
+        const response = await projects.find().limit(3)
+        console.log(response)
+        res.status(200).json(response);
+    }
+    catch (err) {
+        res.status(409).json(err)
+    }
+}
+//2. router.js
+router.get('/api/getHomeProject', jwtMiddleware, projectController.getHomeProjectAPI);
+//3. test in postman
+
+
+//4. allAPI.js
+export const getAppUserProjectAPI = async (reqHeader) => {
+    return await commonAPI('get',`${serverUrl}/api/getAllUserProject`,"",reqHeader)
+}
+
+export const getAUserProject = async (reqHeader) => {
+    return await commonAPI('get',`${serverUrl}/api/getAUserProject`,"",reqHeader)
+}
+
+export const getHomeProject = async () => {
+    return await commonAPI('get',`${serverUrl}/api/getHomeProject`,"","")
+}
+
+//5. Home.jsx
+const [token, setToken] = useState('')
+
+    const [homeProject, setHomeProject] = useState([])
+
+    const getHomeProjects = async () => {
+        const response = await getHomeProjectAPI()
+        console.log(response)
+        if (response.status == 200) {
+            setHomeProject(response.data)
+        }
+    }
+    console.log(homeProject)
+
+    useEffect(() => {
+        setToken(sessionStorage.getItem("token"))
+        getHomeProjects()
+    }, [token])
+
+    {
+        homeProject.length > 0
+            ? homeProject.map(item => (
+                <div className="col m-5">
+                    <ProjectCard item={item}/>
+                </div>))
+            : "No projects"
+    }
+    
+    
+ //6. projectCard.jsx
+ 
+function ProjectCard({item}) {
+
+    <div>
+            <MDBCard>
+                <MDBCardImage src={item?`${serverUrl}/data/${item.projectImg}`:'https://mdbootstrap.com/img/new/standard/nature/184.webp'} position='top' alt='...' />
+                <MDBCardBody>
+                    <MDBCardTitle>{item.title}</MDBCardTitle>
+                    <button onClick={toggleOpen} className='my-3 p-2'>View Details</button>
+                </MDBCardBody>
+            </MDBCard>
+            <MDBModal staticBackdrop tabIndex='-1' open={staticModal} onClose={() => setStaticModal(false)}>
+                <MDBModalDialog>
+                    <MDBModalContent>
+                        <MDBModalHeader>
+                            <MDBModalTitle>{item.title}</MDBModalTitle>
+                            <MDBBtn className='btn-close' color='none' onClick={toggleOpen}></MDBBtn>
+                        </MDBModalHeader>
+                        <MDBModalBody>
+                            <div className="row">
+                                <div className="col-6">
+                                <MDBCardImage src={item?`${serverUrl}/data/${item.projectImg}`:'https://mdbootstrap.com/img/new/standard/nature/184.webp'} position='top' alt='...' />
+                                </div>
+                                <div className="col-6">
+                                <p>{item.language}</p>
+                                <p>{item.github}</p>
+                                <p>{item.website}</p>
+                                <p>{item.overview}</p>
+                                </div>
+                            </div>
+                        </MDBModalBody>
+                        <MDBModalFooter>
+                            <button onClick={toggleOpen} className='my-3 p-2'>Close</button>
+                            <button className='my-3 p-2'>Understood</button>
+                        </MDBModalFooter>
+                    </MDBModalContent>
+                </MDBModalDialog>
+            </MDBModal>
+        </div>
+
+ //7. projects.jsx
+ const [token, setToken] = useState('')
+    const [allProjectDetails, setAllProjectDetails] = useState([])
+
+    const getAllUserProjects = async () => {
+        console.log('getproj', token)
+        if (token) {
+            const reqHeader = {
+                "Content-Type": "multipart/form-data",
+                "Authorization": `Bearer ${token}`
+            }
+            console.log(reqHeader)
+            try {
+                const response = await getAllUserProjectAPI(reqHeader)
+                console.log('api call', response)
+                setAllProjectDetails(response.data)
+
+            }
+            catch (err) {
+                console.log(err)
+            }
+        }
+    }
+    console.log(allProjectDetails)
+
+    useEffect(() => {
+        setToken(sessionStorage.getItem("token"))
+    }, [])
+
+    useEffect(() => {
+        getAllUserProjects()
+    }, [token])
+
+    return (
+        <div>
+            <div className="row m-3">
+                <div className="p-5 text-center">
+                    <div className='py-5 m-5'>
+                        <h2 className='my-4'>ALL PROJECTS</h2>
+                        <h5 className='my-4'>One destination for all software development projects</h5>
+                        <form className='d-flex input-group'>
+                            <input type='search' className='form-control my-4' placeholder='search by technology' aria-label='Search' />
+                            <FaSearch className='fs-4 mx-2' />
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div className="row d-flex">
+                {
+                    allProjectDetails.length > 0 ? allProjectDetails.map(item => (
+                        <div className="col-4" key={item.id}>
+                            <ProjectCard item={item} />
+                        </div>
+                    )) : <div className="text-center">No projects</div>
+                }
+            </div>
+        </div>
+
+    )
+}
+
+export default Projects
+
+//view Project
+const [token, setToken] = useState('')
+    const [projectDetails, setProjectDetails] = useState([])
+
+    const getUserProjects = async () => {
+        console.log('getproj', token)
+        if (token) {
+            const reqHeader = {
+                "Content-Type": "multipart/form-data",
+                "Authorization": `Bearer ${token}`
+            }
+            console.log(reqHeader)
+            try {
+                const response = await getAUserProjectAPI(reqHeader)
+                console.log('api call', response)
+                setProjectDetails(response.data)
+
+            }
+            catch (err) {
+                console.log(err)
+            }
+        }
+    }
+    console.log(projectDetails)
+
+    useEffect(() => {
+        setToken(sessionStorage.getItem("token"))
+    }, [])
+
+    useEffect(() => {
+        getUserProjects()
+    }, [token])
+
+    return (
+        <div>
+        <div className="row mx-5 my-5 text-center">
+            {
+                projectDetails.length > 0 ? projectDetails.map(item => (
+                    <div className="row mb-3" key={item.id}>
+                        {/* Title */}
+                        <div className="col-6">
+                            {item.title}
+                        </div>
+                        {/* Icons */}
+                        <div className="col-3">
+                            <FaExternalLinkAlt className='m-2' />
+                            <FaGithub className='m-2' />
+                            <MdDelete className='m-2' />
+                        </div>
+                        {/* Edit Icon */}
+                        <div className="col-3">
+                            <FaRegEdit className='m-2' />
+                        </div>
+                    </div>
+                ))
+                    : <div>No projects</div>
+            }
+        </div>
+    </div>
+    
+    )
+
+}
+
+export default ViewProject
+
+
+///NEXT STEP   <------------CONTEXT API------------>
+//frondend  ->  new folder -> ContextAPI -> new file -> ContextShare.jsx -> rfce
+//inside contextShare.jsx
+import React, { createContext, useState } from 'react'
+import ViewProject from '../project-fair-frondend/src/Components/ViewProject'
+
+export const addProjectContextResponse = createContext()
+
+function ContextShare({children}) {
+
+    //state for holding details
+    const [addContext, setAddContext] = useState("")
+
+  return (
+    <div>
+        <addProjectContextResponse.Provider value={{addContext, setAddContext}}>
+            {children}
+        </addProjectContextResponse.Provider>
+    </div>
+  )
+}
+export default ContextShare
+
+
+//main.jsx -> enclose browserouter inside contextshare
+{/* <StrictMode>
+    <ContextShare>
+    <BrowserRouter>
+      <App />
+    </BrowserRouter>
+    </ContextShare>
+  </StrictMode>,
+) */}
+
+//addProject.jsx =>    
+const {addContext, setAddContext} =  useContext(addProjectContextResponse)
+console.log(response)
+setAddContext(response.data)
+//viewProject.jsx =>    
+const {addContext, setAddContext} =  useContext(addProjectContextResponse)
+useEffect(() => {
+    getUserProjects()
+}, [token, addContext])
+
+
+
+
+///edit details (backend)
+//1. project controller.js
+//editProject logic
+exports.editProjectAPI = async (req, res) => {
+    console.log("Inside edit Project API");
+    const { title, language, github, website, overview } = req.body;
+    const updateImg = req.file? req.file.filename :updateImg; //from multer middleware
+    const userId = req.payload //from jwt middleware
+    const {projectId} = req.params
+    // console.log("projectImg", projectImg)
+    console.log("FormData", title, language, github, website, overview, userId)
+
+    try {
+
+        const project = await projects.findByIdAndUpdate({ _id:projectId }, { title:title, language:language, github:github, website:website, overview:website, projectImg:updateImg, userId })
+        await project.save()
+        res.status(200).json("Project updated successfully")
+    }
+    catch (err) {
+        res.status(409).json(err)
+    }
+}
+//2. router.js
+router.put('/api/editProject/:projectId', jwtMiddleware, multerMiddleware.single('projectImg'), projectController.editProjectAPI);
+
+///edit details (frondend)
+//1. allAPI.js
+export const editProjectAPI = async (reqBody,reqHeader, projectId) => {
+    return await commonAPI('put',`${serverUrl}/api/editProject/${projectId}`,reqBody,reqHeader)
+}
+
+//2.editProject.jsx
+function EditProject({ item }) {
+
+    const [staticModal, setStaticModal] = useState(false);
+  
+    const toggleOpen = () => setStaticModal(!staticModal);
+  
+    const [projectDetails, setProjectDetails] = useState({
+      id: item._id,
+      title: item.title,
+      language: item.language,
+      github: item.github,
+      website: item.website,
+      overview: item.overview,
+      projectImg: ""
+    })
+  
+    const [preview, setPreview] = useState("")
+  
+    const handleEditProject = async () => {
+      const { id, title, language, github, website, overview, projectImg } = projectDetails;
+    
+      try {
+        const reqBody = new FormData();
+        reqBody.append("title", title);
+        reqBody.append("language", language);
+        reqBody.append("github", github);
+        reqBody.append("website", website);
+        reqBody.append("overview", overview);
+        reqBody.append("projectImg", projectImg || item.projectImg); // Use existing or new image
+    
+        const token = sessionStorage.getItem("token");
+        if (!token) {
+          alert("Please login");
+          return;
+        }
+    
+        const reqHeader = {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "multipart/form-data",
+        };
+    
+        // Ensure that id is a string or number, not an object
+        console.log("Project ID:", id); // Add this line to check id value
+    
+        // Correct API call with projectId
+        const response = await editProjectAPI(reqBody, reqHeader, id.toString());  // Ensure it's a string
+    
+        if (response.status === 200) {
+          alert("Project updated");
+          toggleOpen(); // Close modal
+        } else {
+          alert(response.response.data || "Failed to update project");
+        }
+      } catch (err) {
+        console.error("Error editing project:", err);
+        alert(err.response?.data || "Something went wrong. Please try again.");
+      }
+    };
+    
+  
+    useEffect(() => {
+      if (projectDetails.projectImg) {
+        setPreview(URL.createObjectURL(projectDetails.projectImg))
+      }
+    }, [projectDetails.projectImg])
+  
+    return (
+      <div>
+        <FaRegEdit onClick={toggleOpen} className='m-2' />
+        <MDBModal staticBackdrop tabIndex='-1' open={staticModal} onClose={() => setStaticModal(false)}>
+          <MDBModalDialog>
+            <MDBModalContent>
+              <MDBModalHeader>
+                <MDBModalTitle>Project Name</MDBModalTitle>
+                <MDBBtn className='btn-close' color='none' onClick={toggleOpen}></MDBBtn>
+              </MDBModalHeader>
+              <MDBModalBody>
+                <div className="row">
+                  <div className="col-6">
+                    <label >
+                      <input onChange={(e) => setProjectDetails({ ...projectDetails, projectImg: e.target.files[0] })} type="file" style={{ display: 'none' }} />
+                      <img src={preview ? preview : `${serverUrl}/data/${item.projectImg}`} style={{ width: '100%' }} alt="" />
+                    </label>
+                    <p className="fs-6 text-center">image should be in .jpg, .png, .jpeg format</p>
+                  </div>
+                  <div className="col-6">
+                    <MDBInput value={projectDetails.title} onChange={(e) => setProjectDetails({ ...projectDetails, title: e.target.value })} className='my-2' style={{ backgroundColor: 'white' }} label="Title" id="title" type="text" />
+                    <MDBInput value={projectDetails.language} onChange={(e) => setProjectDetails({ ...projectDetails, language: e.target.value })} className='my-3' style={{ backgroundColor: 'white' }} label="Language" id="language" type="text" />
+                    <MDBInput value={projectDetails.github} onChange={(e) => setProjectDetails({ ...projectDetails, github: e.target.value })} className='my-3' style={{ backgroundColor: 'white' }} label="GitHub" id="github" type="text" />
+                    <MDBInput value={projectDetails.website} onChange={(e) => setProjectDetails({ ...projectDetails, website: e.target.value })} className='my-3' style={{ backgroundColor: 'white' }} label="Website" id="website" type="text" />
+                    <MDBInput value={projectDetails.overview  } onChange={(e) => setProjectDetails({ ...projectDetails, overview: e.target.value })} className='my-3' style={{ backgroundColor: 'white' }} label="Overview" id="overview" type="textarea" />
+                  </div>
+                </div>
+              </MDBModalBody>
+              <MDBModalFooter>
+                <button color='secondary' onClick={toggleOpen} className='my-3 p-2'>Cancel</button>
+                <button onClick={handleEditProject} className='my-3 p-2'>Update</button>
+              </MDBModalFooter>
+            </MDBModalContent>
+          </MDBModalDialog>
+        </MDBModal>
+      </div>
+    )
+  }
+
+
+//   context 
+//   editProject:=
+  const {editContext, setEditContext} = useContext(editProjectContextResponse)
+//   after success 
+setProjectDetails(response.data)
+
+// ViewProject:=
+const {editContext, setEditContext} = useContext(editProjectContextResponse)
+useEffect(() => {
+    getUserProjects()
+}, [token, addContext, editContext])
+
+
+
+//<------------DELETE-------------->
+//projectController.js
+exports.deleteProjectAPI = async (req, res) => {
+    console.log("Inside delete project API")
+    const {projectId} = req.params
+    try{
+        const project = await projects.findByIdAndDelete({_id:projectId})
+        res.status(200).json(project)
+    }
+    catch(err){
+        res.status(400),json(err)
+    }
+}
+//router.js
+router.delete('/api/deleteProject/:projectId', jwtMiddleware, multerMiddleware.single('projectImg'), projectController.deleteProjectAPI);
+
+//allAPI.js
+export const deleteProjectAPI = async (projectId, reqHeader) => {
+    return await commonAPI('delete',`${serverUrl}/api/deleteProject/${projectId}`,"",reqHeader)
+}
+
+//viewProject.jsx
+<MdDelete onClick={()=>handleDelete(item._id)} className='m-2' />
+
+const handleDelete = async (projectId) => {
+    if (token) {
+        const reqHeader = {
+            "Content-Type": "multipart/form-data",
+            "Authorization": `Bearer ${token}`
+        }
+        console.log(reqHeader)
+    try{
+        const deleteResponse = await deleteProjectAPI(projectId, reqHeader)
+        console.log(deleteResponse)
+        alert("Project deleted")
+        window.location.reload()
+    }
+    catch(err){
+        console.log(err)
+    }
+}}
+
+
+//<-----------tokenAuthContext---------------->
+///import React from 'react'
+import React from 'react'
+import { useEffect } from 'react'
+import { useState } from 'react'
+import { createContext } from 'react'
+
+const tokenAuthContext = createContext()
+
+function tokenAuthContext({Children}) {
+
+    const [isAuthorized, setIsAuthorized] = useState(false)
+
+    useEffect(()=>{
+        if(sessionStorage.getItem("token")){
+            setIsAuthorized(true)
+        }
+        else{
+            setIsAuthorized(false)
+        }
+    },[isAuthorized])
+
+  return (
+    <div>
+        <tokenAuthContext.Provider value={{isAuthorized, setIsAuthorized}}>
+            {Children}
+        </tokenAuthContext.Provider>
+    </div>
+  )
+}
+
+export default tokenAuthContext
+
+
+
+
