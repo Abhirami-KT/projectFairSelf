@@ -3,7 +3,7 @@ const express = require('express')
 const userController = require('../Controller/userController')
 const jwtMiddleware = require('../Middlewares/jwtMiddleware')
 const projectController = require('../Controller/projectController')
-const multerMiddleware = require('../Middlewares/MulterMiddleware')
+const multerMiddleware = require('../Middlewares/multerMiddleware')
 
 const router = express.Router()
 
